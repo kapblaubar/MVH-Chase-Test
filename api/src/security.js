@@ -4,6 +4,23 @@ const SENSITIVE_KEYS = /(?:authorization|token|secret|password|accountnumber|acc
 const CARD_CANDIDATE = /(?:\d[ -]*?){13,19}/g;
 const ALLOWED_MOCK_PANS = new Set(['4012000033330026']);
 
+function normalizePan(value) {
+  return String(value ?? '').replace(/[ -]/g, '');
+}
+
+function isAllowedMockPan(value) {
+  return ALLOWED_MOCK_PANS.has(normalizePan(value));
+}
+
+function validateMockCard(card, currentYear = new Date().getUTCFullYear()) {
+  if (!card || !isAllowedMockPan(card.accountNumber)) return 'Use only the published Chase quick-start mock card number.';
+  const month = Number(card.expiry?.month);
+  const year = Number(card.expiry?.year);
+  if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year) || year < currentYear) return 'Enter a valid mock-card expiration month and year.';
+  if (!/^\d{3,4}$/.test(String(card.cvv ?? ''))) return 'Enter a 3- or 4-digit mock card verification value.';
+  return null;
+}
+
 function luhn(value) {
   const digits = value.replace(/\D/g, '');
   if (digits.length < 13 || digits.length > 19) return false;
@@ -40,4 +57,4 @@ function redact(value) {
   return value;
 }
 
-module.exports = { containsPanLikeValue, luhn, redact };
+module.exports = { containsPanLikeValue, isAllowedMockPan, luhn, redact, validateMockCard };

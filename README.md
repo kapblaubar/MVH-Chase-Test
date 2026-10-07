@@ -51,7 +51,7 @@ Copy-Item infra/main.bicepparam.example infra/main.bicepparam
 
 The script prompts securely for Chase values, stores them in Key Vault, deploys the Functions package, uploads the portal, and prints the resulting URLs. For CI, pass secret values as secure environment variables described by `Get-Help ./scripts/deploy.ps1 -Detailed`.
 
-The portal captures synthetic payer and pet details, offers Dog Vacine ($75), Dog XRAY ($180), and Dog Exam ($65), previews the generated Chase payload, submits to the Chase mock API, and records a safe summary in the `PaymentRecords` Azure Table. It never stores the card number, CVV, OAuth credentials, or full Chase payload/response. Payment History displays the stored POC records. Chase Review shows a readable summary and retains the sanitized raw JSON evidence returned by Chase. The Online Payments API does not provide a general Chase history list.
+The portal captures synthetic payer, pet, and editable mock-card details; offers Dog Vacine ($75), Dog XRAY ($180), and Dog Exam ($65); previews the generated Chase payload with CVV masked; submits to the Chase mock API; and records a safe summary in the `PaymentRecords` Azure Table. The API accepts only the published Chase quick-start mock PAN. It never stores the card number, expiration, CVV, OAuth credentials, or full Chase payload/response. Payment History displays the stored POC records. Chase Review shows a readable summary and retains the sanitized raw JSON evidence returned by Chase. The Online Payments API does not provide a general Chase history list.
 
 ## Local checks
 

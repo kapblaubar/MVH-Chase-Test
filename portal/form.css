@@ -18,6 +18,8 @@ legend {
   font: 500 19px Georgia, serif;
 }
 
+.field-note { margin: -10px 0 18px; color: var(--muted); font-size: 12px; }
+
 .payload-preview {
   margin: 8px 0 22px;
   border: 1px solid var(--line);

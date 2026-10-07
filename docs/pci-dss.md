@@ -41,6 +41,8 @@ The POC’s deliberate lack of sign-in conflicts with the spirit—and likely ap
 ## Required guardrails for this phase
 
 - Use only J.P. Morgan mock/test endpoints and synthetic values.
+- Permit only an explicit allow-list of J.P. Morgan-published test PANs; reject any other PAN at the backend even if browser validation is bypassed.
+- Treat mock CVV as transient: mask the field and preview, transmit it only for the current request, and never persist or log it.
 - Never store PAN, CVV, bank-account numbers, payloads, or tokens in logs, screenshots, tickets, browser storage, or source control.
 - Keep secrets server-side in Key Vault and rotate them after suspected disclosure.
 - Limit portal access at the network/platform layer where practical even before application sign-in is added.

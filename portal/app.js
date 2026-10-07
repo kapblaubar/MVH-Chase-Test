@@ -95,13 +95,13 @@ async function callApi(form, url, options) {
   } finally { button.disabled = false; }
 }
 
-function buildPaymentPayload() {
+function buildPaymentPayload(redactCardVerification = false) {
   const fields = Object.fromEntries(new FormData(paymentForm));
   const product = PRODUCTS[fields.product];
   return {
     captureMethod: 'NOW', amount: product.amount, currency: 'USD', merchantOrderNumber,
     merchant: { merchantSoftware: { companyName: 'MVH', productName: 'Chase POC', version: '0.1.0' }, merchantCategoryCode: '4899' },
-    paymentMethodType: { card: { accountNumber: '4012000033330026', expiry: { month: 5, year: 2027 }, isBillPayment: true } },
+    paymentMethodType: { card: { accountNumber: fields.cardNumber.replace(/[ -]/g, ''), expiry: { month: Number(fields.expiryMonth), year: Number(fields.expiryYear) }, cvv: redactCardVerification ? '[MOCK CVV ENTERED]' : fields.cvv, isBillPayment: true } },
     accountHolder: {
       firstName: fields.firstName, lastName: fields.lastName, email: fields.email,
       phone: { countryCode: 1, phoneNumber: fields.phoneNumber },
@@ -111,7 +111,7 @@ function buildPaymentPayload() {
   };
 }
 
-function updatePreview() { payloadPreview.textContent = JSON.stringify(buildPaymentPayload(), null, 2); }
+function updatePreview() { payloadPreview.textContent = JSON.stringify(buildPaymentPayload(true), null, 2); }
 paymentForm.addEventListener('input', updatePreview);
 paymentForm.addEventListener('change', updatePreview);
 updatePreview();

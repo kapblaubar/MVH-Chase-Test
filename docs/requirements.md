@@ -12,7 +12,7 @@ The POC proves connectivity and workflow; it is not approval to process producti
 - The supplied URL is the mock OAuth token URL. The supplied 86-character credential is treated as the OAuth client secret, not a bearer access token.
 - The Online Payments quick start identifies `https://api-mock.payments.jpmorgan.com/api/v2/payments` as the mock payment endpoint.
 - The implementation uses the Online Payments v2 create and single-payment retrieval contracts. It does not claim to provide general payment history.
-- No primary account number (PAN), security code/CVV, real bank-account number, or other live payment-account data may be entered into this POC.
+- Only the explicitly allow-listed J.P. Morgan published mock PAN may be entered. A synthetic expiration date and mock CVV may be supplied. No real PAN, CVV, bank-account number, or other live payment-account data may be entered.
 - Azure resource defaults are:
   - Resource group: `MVH-Chase-POC-RSG`
   - Key Vault: `MVH-Chase-POC-KV`
@@ -31,7 +31,10 @@ The POC proves connectivity and workflow; it is not approval to process producti
 - HLR-F05: Each submit request shall have a correlation/request ID to support troubleshooting and safe retries.
 - HLR-F06: The backend shall communicate only with the configured Chase host and endpoints.
 - HLR-F07: The POC shall not persist full Chase payment requests/responses or payment credentials; only the allow-listed summary defined in the data rules may be stored.
-- HLR-F08: The portal shall capture synthetic payer and visit details, show the exact Chase request preview, and record a safe payment summary in Azure Table Storage.
+- HLR-F08: The portal shall capture synthetic payer, visit, and mock card details; show a Chase request preview with the CVV masked; and record a safe payment summary in Azure Table Storage.
+- HLR-F09: The portal shall provide editable mock-card number, expiration month/year, and CVV fields and transmit them only to the backend payment operation.
+- HLR-F10: The portal shall display the locally stored payment history separately from Chase's scenario-driven single-payment mock response.
+- HLR-F11: Chase responses shall be presented as a readable summary while retaining the complete sanitized raw JSON as test evidence.
 
 ### Security and compliance
 
@@ -39,10 +42,12 @@ The POC proves connectivity and workflow; it is not approval to process producti
 - HLR-S02: The API shall access Key Vault through an Azure managed identity with secret-read-only RBAC.
 - HLR-S03: All traffic shall use HTTPS/TLS.
 - HLR-S04: Logs and telemetry shall exclude authorization values and payment payload/response bodies by default.
-- HLR-S05: The portal shall clearly state “mock data only” and shall reject common PAN-like digit sequences.
+- HLR-S05: The portal shall clearly state “mock data only” and shall reject all card numbers except the explicitly allow-listed Chase test PAN.
 - HLR-S06: The browser shall never call Chase or Key Vault directly.
 - HLR-S07: Public access without sign-in is accepted only for the temporary developer POC; authentication and authorization are required before any shared, test-client, or production use.
 - HLR-S08: The team shall perform and document a PCI DSS scope determination with its acquiring bank/QSA before real card data is used.
+- HLR-S09: The backend shall allow only explicitly configured, published Chase test PANs and reject every other card number.
+- HLR-S10: PAN, expiration, and CVV shall not be persisted in Azure Table Storage, application logs, telemetry, browser storage, cookies, URLs, or source control. CVV shall be masked in the request preview.
 
 ### Operational
 
@@ -57,18 +62,22 @@ The POC proves connectivity and workflow; it is not approval to process producti
 ### Portal
 
 - LLR-P01: Serve a static HTML/CSS/JavaScript client from Azure Static Web Apps.
-- LLR-P02: Provide “Push payment” and “Review payment” views.
-- LLR-P03: The payment view shall accept a JSON body, validate that it is an object and valid JSON, and require explicit operator confirmation that it contains mock data.
-- LLR-P04: The review view shall require `requestIdentifier` and URL-encode it.
+- LLR-P02: Provide Push Payment, Payment History, and Chase Review views.
+- LLR-P03: The payment view shall generate the JSON request from structured form fields and require explicit operator confirmation that it contains mock data.
+- LLR-P04: Chase Review shall require `requestIdentifier` and URL-encode it.
 - LLR-P05: Disable submit controls while a request is in flight and prevent accidental double-submit.
 - LLR-P06: Render API results as text, not executable HTML.
 - LLR-P07: Do not store request content in cookies, local storage, session storage, analytics, or URLs.
 - LLR-P08: Set a restrictive Content Security Policy, clickjacking protection, referrer policy, and MIME-sniffing protection.
+- LLR-P09: The payment view shall capture payer, visit, product, and editable mock-card fields rather than requiring operators to edit raw JSON.
+- LLR-P10: Mock card number shall default to Chase quick-start PAN `4012000033330026`; expiration shall use numeric month/year fields; CVV shall use a masked 3- or 4-digit field and default to mock match value `111`.
+- LLR-P11: Payment History shall retrieve the latest 100 safe records from `GET /api/payment-records` and allow the operator to inspect a record's stored fields.
+- LLR-P12: Chase Review shall show both a readable summary and the complete sanitized raw JSON response.
 
 ### Backend APIs
 
 - LLR-A01: `POST /api/payments` shall accept `application/json` with a maximum body size of 64 KiB.
-- LLR-A02: `POST /api/payments` shall reject malformed JSON, empty/non-object bodies, PAN-like 13–19 digit sequences (after common separators are removed), and requests lacking `X-Confirm-Mock-Data: true`.
+- LLR-A02: `POST /api/payments` shall reject malformed JSON, empty/non-object bodies, unapproved PANs, invalid card fields, and requests lacking `X-Confirm-Mock-Data: true`.
 - LLR-A03: The API shall use an incoming valid `X-Correlation-ID` or create a UUID, and return it in the response.
 - LLR-A04: The API shall exchange the client ID and client secret at the configured OAuth token URL, cache the short-lived bearer token server-side, and send that bearer token to the Payments API.
 - LLR-A05: The API shall set `Accept: application/json`, `Content-Type: application/json`, and configurable correlation/request-ID header names.
@@ -79,6 +88,8 @@ The POC proves connectivity and workflow; it is not approval to process producti
 - LLR-A10: Client responses shall map validation failures to 400, timeouts to 504, configuration failures to 500, and upstream failures to 502 while preserving the upstream status in a separate field.
 - LLR-A11: CORS shall allow only the deployed portal origin (and explicitly configured local development origin).
 - LLR-A12: URLs shall be assembled from a configured base URL plus relative paths; absolute, user-supplied upstream URLs are prohibited.
+- LLR-A13: `POST /api/payments` shall reject every PAN except the allow-listed published Chase mock PAN, invalid expiration values, and CVVs other than 3 or 4 digits.
+- LLR-A14: `GET /api/payment-records` shall return at most 100 records from partition `POC`, newest first, and shall expose no payment credentials or raw request/response bodies.
 
 ### Azure infrastructure
 
@@ -95,7 +106,7 @@ The POC proves connectivity and workflow; it is not approval to process producti
 
 ### Testing and acceptance
 
-- LLR-T01: Unit tests shall cover URL construction, query allow-listing, JSON/PAN validation, and response sanitization.
+- LLR-T01: Unit tests shall cover URL construction, query allow-listing, mock-PAN allow-listing, payment-field validation, storage exclusion, and response sanitization.
 - LLR-T02: IaC shall compile with the installed Bicep CLI.
 - LLR-T03: A smoke test shall verify portal availability and that both API endpoints return controlled errors before secrets are configured.
 - LLR-T04: With valid mock credentials, a documented J.P. Morgan happy-path sample shall submit successfully and appear through the supported history API, if that product provides history/list functionality.

@@ -3,7 +3,7 @@
 const { app } = require('@azure/functions');
 const { buildUrl, requireSetting, upstreamHeaders } = require('./chase');
 const { beginRecord, completeRecord, listRecords } = require('./records');
-const { containsPanLikeValue, redact } = require('./security');
+const { containsPanLikeValue, redact, validateMockCard } = require('./security');
 
 const MAX_REQUEST_BYTES = 64 * 1024;
 const MAX_RESPONSE_BYTES = 1024 * 1024;
@@ -78,6 +78,9 @@ async function payments(request, context) {
       if (containsPanLikeValue(body)) {
         return response(400, { error: 'A PAN-like value was detected. This POC does not accept card numbers.' }, correlationId);
       }
+      const card = body.paymentMethodType?.card;
+      const cardError = validateMockCard(card);
+      if (cardError) return response(400, { error: cardError }, correlationId);
       const productCode = request.headers.get('x-mvh-product');
       if (!Object.hasOwn(PRODUCTS, productCode)) {
         return response(400, { error: 'Select a supported test product.' }, correlationId);

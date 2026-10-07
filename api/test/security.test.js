@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { buildUrl, getAccessToken } = require('../src/chase');
-const { containsPanLikeValue, luhn, redact } = require('../src/security');
+const { containsPanLikeValue, isAllowedMockPan, luhn, redact, validateMockCard } = require('../src/security');
 const { customerRecord, parseStorageConnection } = require('../src/records');
 
 test('detects a Luhn-valid PAN candidate', () => {
@@ -13,6 +13,17 @@ test('detects a Luhn-valid PAN candidate', () => {
 
 test('does not reject ordinary identifiers', () => {
   assert.equal(containsPanLikeValue({ paymentId: '1234567890' }), false);
+});
+
+test('permits only the configured published mock PAN', () => {
+  assert.equal(isAllowedMockPan('4012 0000 3333 0026'), true);
+  assert.equal(isAllowedMockPan('4111111111111111'), false);
+});
+
+test('validates mock expiry and CVV fields', () => {
+  assert.equal(validateMockCard({ accountNumber: '4012000033330026', expiry: { month: 5, year: 2027 }, cvv: '111' }, 2026), null);
+  assert.match(validateMockCard({ accountNumber: '4012000033330026', expiry: { month: 13, year: 2027 }, cvv: '111' }, 2026), /expiration/);
+  assert.match(validateMockCard({ accountNumber: '4012000033330026', expiry: { month: 5, year: 2027 }, cvv: '12' }, 2026), /verification/);
 });
 
 test('redacts sensitive fields and PAN-like strings', () => {
