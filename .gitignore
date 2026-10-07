@@ -1,0 +1,10 @@
+infra/main.bicepparam
+api/node_modules/
+*.zip
+.env
+.env.*
+!.env.example
+infra/main.bicepparam
+.swa/
+.DS_Store
+Thumbs.db

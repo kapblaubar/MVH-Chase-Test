@@ -1,0 +1,15 @@
+using './main.bicep'
+
+param location = 'westus2'
+param resourceGroupName = 'MVH-Chase-POC-RSG'
+param keyVaultName = 'MVH-Chase-POC-KV'
+param staticWebAppName = 'MVH-Chase-POC-webapp'
+param functionAppName = 'MVH-Chase-POC-api'
+
+// Confirm these paths and headers against the exact J.P. Morgan API product.
+param chaseCreatePath = '/api/v2/payments'
+param chaseHistoryPath = '/api/v2/payments'
+param chaseApiBaseUrl = 'https://api-mock.payments.jpmorgan.com'
+param chaseClientIdHeader = ''
+param chaseRequestIdHeader = 'request-id'
+param chaseMerchantId = '998482157630'
